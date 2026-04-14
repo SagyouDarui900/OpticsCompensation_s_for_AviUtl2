@@ -48,7 +48,7 @@
                 return float4(0.0, 0.0, 0.0, 0.0); 
             }
         } else {
-            // 【修正点】手動でUVを画像の端のピクセル内に制限（Clamp）する
+            // 手動でUVを画像の端のピクセル内に制限（Clamp）する
             // AviUtl2側のサンプラー設定に依存せず、シェーダー内で確実に引き伸ばし処理を行います
             float2 half_px = 0.5 / img_size;
             uv = clamp(uv, half_px, 1.0 - half_px);
@@ -132,6 +132,11 @@ local mode = 1.0
 if lua_amount < 0.0 then
     mode = -1.0
     lua_amount = -lua_amount
+end
+
+-- 【バグ修正】amountが100 (1.0) の時、tan(90度)が無限大になり計算が崩壊するのを防ぐリミッター
+if lua_amount > 0.999 then
+    lua_amount = 0.999
 end
 
 -- 焦点距離の計算 (tan(0)によるゼロ除算を回避)
