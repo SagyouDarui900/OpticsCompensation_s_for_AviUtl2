@@ -1,0 +1,2 @@
+# OpticsCompensation_s_for_AviUtl2
+SEED264さんの「OpticsCompensation_s」をAviUtl2に移植しました。
