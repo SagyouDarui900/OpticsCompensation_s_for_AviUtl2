@@ -1,5 +1,5 @@
 --label:変形
---information:OpticsCompensation_s v2.0
+--information:OpticsCompensation_s for AviUtl2
 --filter
 
 -- ==========================================
@@ -47,6 +47,11 @@
                 // 完全な透明を表現する場合はRGB値も0.0にする必要があります。
                 return float4(0.0, 0.0, 0.0, 0.0); 
             }
+        } else {
+            // 【修正点】手動でUVを画像の端のピクセル内に制限（Clamp）する
+            // AviUtl2側のサンプラー設定に依存せず、シェーダー内で確実に引き伸ばし処理を行います
+            float2 half_px = 0.5 / img_size;
+            uv = clamp(uv, half_px, 1.0 - half_px);
         }
         return tex.Sample(smp, uv);
     }
@@ -139,18 +144,17 @@ end
 local cx = (obj.w / 2.0) + center_x + anchor_x
 local cy = (obj.h / 2.0) + center_y + anchor_y
 
--- 「範囲外を透明にする」がOFFの場合、ピクセルの端を延長(clamp)するように設定
-if transparent == 0 then
-    obj.setoption("sampler", "clamp")
-end
+-- チェックボックスの値を安全に取得（AviUtl2の仕様変更に備えて true と 1 の両方に対応）
+local is_transparent = (transparent == 1 or transparent == true)
+local is_use_aa = (use_aa == 1 or use_aa == true)
 
 -- シェーダーの実行
 -- 第4引数の配列は、HLSL内の cbuffer Params の変数の並び順と一致させる必要があります
 obj.pixelshader("ps_optics", "object", {"object"}, {
-    cx, cy,             -- float2 center
-    focal_dist,         -- float focal_dist
-    mode,               -- float mode
-    use_aa,             -- float use_aa
-    transparent,        -- float transparent
-    obj.w, obj.h        -- float2 img_size
+    cx, cy,                           -- float2 center
+    focal_dist,                       -- float focal_dist
+    mode,                             -- float mode
+    is_use_aa and 1.0 or 0.0,         -- float use_aa (HLSL用に0.0か1.0に変換)
+    is_transparent and 1.0 or 0.0,    -- float transparent (HLSL用に0.0か1.0に変換)
+    obj.w, obj.h                      -- float2 img_size
 })
